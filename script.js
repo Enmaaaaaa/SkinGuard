@@ -90,19 +90,35 @@ async function processImage(image) {
         document.getElementById('result-label').innerHTML =
             '<span class="loading"></span> Analizando imagen...';
 
+        //  PREPROCESAMIENTO ROBUSTO
         const imgTensor = tf.tidy(() => {
             let tensor = tf.browser.fromPixels(image)
                 .resizeNearestNeighbor([224, 224])
                 .toFloat()
                 .div(tf.scalar(255));
-    
-            // Detecta si el modelo fue exportado en formato canales-primeros
-            if (model.inputs && model.inputs[0].shape.length === 4 && model.inputs[0].shape[1] === 3) {
-                // El modelo espera [1,3,224,224] → permutamos ejes
-                tensor = tensor.transpose([2, 0, 1]);
+        
+            // Intentar detectar orientación del modelo
+            let shape = null;
+            try {
+                if (model && model.inputs && model.inputs[0] && model.inputs[0].shape) {
+                    shape = model.inputs[0].shape;
+                    console.log("Forma esperada por el modelo:", shape);
+                }
+            } catch (err) {
+                console.warn("No se pudo leer model.inputs, usando NHWC por defecto");
             }
         
-            return tensor.expandDims(0); // Devuelve [1,3,224,224] o [1,224,224,3] según corresponda
+            // 🔁 Ajustar canales según sea necesario
+            if (shape && shape[1] === 3 && shape[2] === 224) {
+                // Modelo tipo PyTorch [1,3,224,224]
+                console.log("Modelo usa formato canales-primeros (NCHW)");
+                tensor = tensor.transpose([2, 0, 1]); // [3,224,224]
+            } else {
+                // Modelo tipo TensorFlow [1,224,224,3]
+                console.log("Modelo usa formato canales-últimos (NHWC)");
+            }
+        
+            return tensor.expandDims(0); 
         });
 
 
@@ -157,5 +173,6 @@ function displayPrediction(prediction, confidence) {
 // Inicializar
 window.onload = loadModel;
 console.log("Forma de entrada del modelo:", model.inputs[0].shape);
+
 
 
