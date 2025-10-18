@@ -90,16 +90,17 @@ async function processImage(image) {
         document.getElementById('result-label').innerHTML =
             '<span class="loading"></span> Analizando imagen...';
 
-        // ✅ Preprocesamiento correcto
+        // Ajuste de orden de canales (NCHW para modelos PyTorch/ResNeXt)
         const imgTensor = tf.tidy(() => {
             return tf.browser.fromPixels(image)
                 .resizeNearestNeighbor([224, 224])
                 .toFloat()
                 .div(tf.scalar(255))
-                .expandDims(0); // [1,224,224,3]
+                .expandDims(0)             // [1,224,224,3]
+                .transpose([0, 3, 1, 2]);  // Reordena a [1,3,224,224]
         });
 
-        // ✅ Predicción compatible (GraphModel o LayersModel)
+        // Predicción compatible (GraphModel o LayersModel)
         const prediction = model.executeAsync
             ? await model.executeAsync(imgTensor)
             : await model.predict(imgTensor);
@@ -107,7 +108,7 @@ async function processImage(image) {
         const predictionData = await prediction.data();
         tf.dispose([imgTensor, prediction]);
 
-        // ✅ Determinar clase más probable
+        // Determinar clase más probable
         const maxIdx = predictionData.indexOf(Math.max(...predictionData));
         const confidence = predictionData[maxIdx];
         const predictedClass = classNames[maxIdx];
@@ -149,3 +150,4 @@ function displayPrediction(prediction, confidence) {
 
 // Inicializar
 window.onload = loadModel;
+
