@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clasificación de Cáncer de Piel</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+
+    <!-- ✅ Librería TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script> <!-- 🔧 cambio: versión estable -->
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,10 +21,13 @@
 
         <div class="upload-section">
             <div class="upload-buttons">
-                <button class="btn btn-primary" onclick="triggerFileInput()" id="uploadBtn" disabled>
+                <!-- 🔧 cambio: IDs compatibles con script.js -->
+                <button class="btn btn-primary" id="predict-button" disabled>
                     📁 Subir Imagen
                 </button>
-                <input type="file" id="imageInput" class="file-input" accept="image/*" onchange="handleImageUpload(event)">
+
+                <!-- 🔧 cambio: id y evento -->
+                <input type="file" id="image-upload" class="file-input" accept="image/*">
             </div>
         </div>
 
@@ -30,21 +36,26 @@
                 <div class="placeholder-text" id="placeholderText">
                     Selecciona una imagen para iniciar el análisis
                 </div>
-                <img id="previewImage" class="hidden" alt="Vista previa">
+                <!-- 🔧 cambio: id corregido -->
+                <img id="input-image" class="hidden" alt="Vista previa">
             </div>
         </div>
 
         <div class="result-section">
             <h2 class="result-title">Resultado del Análisis</h2>
-            <div class="prediction-result result-waiting" id="predictionResult">
+
+            <!-- 🔧 cambio: IDs que usa script.js -->
+            <div class="prediction-result result-waiting" id="result-label">
                 Esperando imagen para analizar...
             </div>
-            <div class="confidence-bar hidden" id="confidenceBar">
+
+            <div class="confidence-bar hidden" id="result-confidence">
                 <div class="confidence-fill" id="confidenceFill"></div>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- 🔧 cambio: defer para asegurar carga completa -->
+    <script defer src="script.js"></script>
 </body>
 </html>
