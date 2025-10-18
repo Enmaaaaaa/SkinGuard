@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clasificación de Cáncer de Piel</title>
 
-    <!-- ✅ Librería TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script> <!-- 🔧 cambio: versión estable -->
+    <!-- Librería TensorFlow.js (versión estable y compatible con GraphModel) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
 
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Estado del modelo -->
     <div class="status-indicator status-loading" id="modelStatus">
         <span class="loading"></span> Cargando modelo...
     </div>
@@ -19,43 +20,57 @@
         <h1>🔬 Clasificación de Cáncer de Piel</h1>
         <p class="subtitle">Sube una imagen para realizar el análisis de lesiones de piel (lunares)</p>
 
+        <!-- Sección de carga -->
         <div class="upload-section">
             <div class="upload-buttons">
-                <!-- 🔧 cambio: IDs compatibles con script.js -->
+                <!-- ✅ ID sincronizado con script.js -->
                 <button class="btn btn-primary" id="predict-button" disabled>
                     📁 Subir Imagen
                 </button>
 
-                <!-- 🔧 cambio: id y evento -->
+                <!-- ✅ Input de imagen -->
                 <input type="file" id="image-upload" class="file-input" accept="image/*">
             </div>
         </div>
 
+        <!-- Vista previa -->
         <div class="preview-section">
             <div class="image-container" id="imageContainer">
                 <div class="placeholder-text" id="placeholderText">
                     Selecciona una imagen para iniciar el análisis
                 </div>
-                <!-- 🔧 cambio: id corregido -->
+                <!-- ✅ Imagen de vista previa -->
                 <img id="input-image" class="hidden" alt="Vista previa">
             </div>
         </div>
 
+        <!-- Resultados -->
         <div class="result-section">
             <h2 class="result-title">Resultado del Análisis</h2>
 
-            <!-- 🔧 cambio: IDs que usa script.js -->
+            <!-- ✅ Texto de resultado -->
             <div class="prediction-result result-waiting" id="result-label">
                 Esperando imagen para analizar...
             </div>
 
+            <!-- ✅ Barra de confianza -->
             <div class="confidence-bar hidden" id="result-confidence">
                 <div class="confidence-fill" id="confidenceFill"></div>
             </div>
         </div>
     </div>
 
-    <!-- 🔧 cambio: defer para asegurar carga completa -->
+    <!-- Cargar el script -->
     <script defer src="script.js"></script>
+
+    <!-- Pequeña mejora UX: cuando el modelo está listo -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const uploadBtn = document.getElementById("predict-button");
+            const fileInput = document.getElementById("image-upload");
+            uploadBtn.addEventListener("click", () => fileInput.click());
+        });
+    </script>
 </body>
 </html>
+
