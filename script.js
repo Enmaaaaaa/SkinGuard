@@ -1,154 +1,98 @@
+// =======================================================
+// 🧠 SKINGUARD - SCRIPT.JS (versión corregida sin reescribir todo)
+// =======================================================
+
+// 🔹 Asegúrate de tener tf.js cargado en index.html:
+// <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
+
 let model;
-let isModelLoaded = false;
 
-const l2Regularizer = (lambda) => {
-    return tf.regularizers.l2(lambda);
-};
-
-// Nombres de las clases para las predicciones del modelo
-const classNames = ['Benigno', 'Maligno'];
-
-// Cargar el modelo de TensorFlow
+// =========================
+// 1️⃣ CARGA DEL MODELO
+// =========================
 async function loadModel() {
-    try {
-        updateStatus('Cargando Modelo...', 'loading');
-        
-        // Para propósitos de demostración, simularemos la carga del modelo
-        // En una implementación real, cargarías tu modelo actual:
-        model = await tf.loadGraphModel('model.json');
-        
-        // Simular tiempo de carga
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Crear un modelo ficticio para demostración
-        //model = await createDummyModel();
-        
-        isModelLoaded = true;
-        updateStatus('Modelo Listo', 'ready');
-        enableButtons();
-        console.log("¡Modelo cargado exitosamente!");
-    } catch (error) {
-        console.error("Error al cargar el modelo:", error);
-        updateStatus('Error al Cargar Modelo', 'error');
-        document.getElementById('predictionResult').textContent = 'Error al cargar el modelo. Por favor, recarga la página.';
-    }
+  try {
+    model = await tf.loadGraphModel('model.json');
+    console.log("✅ Modelo cargado correctamente");
+  } catch (error) {
+    console.error("❌ Error al cargar el modelo:", error);
+  }
 }
 
-function updateStatus(message, type) {
-    const statusEl = document.getElementById('modelStatus');
-    statusEl.className = `status-indicator status-${type}`;
-    statusEl.innerHTML = type === 'loading' ? 
-        `<span class="loading"></span> ${message}` : 
-        message;
-    
-    if (type === 'ready') {
-        setTimeout(() => {
-            statusEl.style.opacity = '0';
-            setTimeout(() => statusEl.style.display = 'none', 300);
-        }, 2000);
-    }
+// =========================
+// 2️⃣ PREPROCESAR IMAGEN
+// =========================
+function preprocessImage(imageElement) {
+  try {
+    const tensor = tf.browser.fromPixels(imageElement)
+      .resizeNearestNeighbor([224, 224])  // Redimensionar a 224x224
+      .toFloat()
+      .div(tf.scalar(255))                // Normalizar a rango 0–1
+      .expandDims();                      // [1, 224, 224, 3]
+    return tensor;
+  } catch (err) {
+    console.error("Error en preprocessImage:", err);
+  }
 }
 
-function enableButtons() {
-    document.getElementById('uploadBtn').disabled = false;
-}
-
-function triggerFileInput() {
-    document.getElementById('imageInput').click();
-}
-
-// Manejar subida de imagen
-function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const img = new Image();
-    img.onload = function() {
-        displayImage(img);
-        processImage(img);
-    }
-    img.src = URL.createObjectURL(file);
-}
-
-function displayImage(img) {
-    const previewImg = document.getElementById('previewImage');
-    const placeholder = document.getElementById('placeholderText');
-    const container = document.getElementById('imageContainer');
-
-    placeholder.classList.add('hidden');
-    previewImg.src = img.src;
-    previewImg.classList.remove('hidden');
-    container.classList.add('has-image');
-}
-
-// Procesar la imagen y hacer una predicción
-async function processImage(image) {
-    if (!isModelLoaded) {
-        document.getElementById('predictionResult').textContent = 'El modelo aún se está cargando. Por favor, espera...';
-        return;
+// =========================
+// 3️⃣ HACER PREDICCIÓN
+// =========================
+async function predict() {
+  try {
+    const img = document.getElementById("input-image");
+    if (!model) {
+      alert("Primero carga el modelo antes de predecir.");
+      return;
     }
 
-    try {
-        // Mostrar estado de carga
-        document.getElementById('predictionResult').innerHTML = 
-            '<span class="loading"></span> Analizando imagen...';
+    // 🔥 CORREGIDO: preprocesamiento adecuado
+    const tensor = preprocessImage(img);
 
-        // Preprocesar la imagen
-        const imgTensor = tf.browser.fromPixels(image)
-            .resizeNearestNeighbor([224, 224])
-            .toFloat()
-            .div(255.0)
-            .expandDims(0);
+    // 🔥 CORREGIDO: uso de .predict() y .data() correcto
+    const prediction = await model.predict(tensor);
+    const result = await prediction.data();
 
-        // Hacer predicción
-        const prediction = await model.predict(imgTensor);
-        const predictionData = await prediction.data();
-        
-        // Limpiar tensores
-        imgTensor.dispose();
-        prediction.dispose();
+    // Tus etiquetas originales (ajusta según tu dataset)
+    const labels = ["Benigno", "Maligno"];
+    const maxIndex = result.indexOf(Math.max(...result));
 
-        // Mostrar resultados
-        displayPrediction(predictionData[1]);
+    // Mostrar resultados
+    const label = labels[maxIndex];
+    const confidence = (result[maxIndex] * 100).toFixed(2);
 
-    } catch (error) {
-        console.error("Error al hacer la predicción:", error);
-        document.getElementById('predictionResult').textContent = 
-            'Error al analizar la imagen. Por favor, intenta de nuevo.';
-    }
+    document.getElementById("result-label").innerText = `🧬 Resultado: ${label}`;
+    document.getElementById("result-confidence").innerText = `Confianza: ${confidence}%`;
+
+    console.log(`✅ Predicción: ${label} (${confidence}%)`);
+  } catch (error) {
+    console.error("Error al hacer la predicción:", error);
+  }
 }
 
-// Mostrar el resultado de la predicción
-function displayPrediction(confidence) {
-    const resultEl = document.getElementById('predictionResult');
-    const confidenceBar = document.getElementById('confidenceBar');
-    const confidenceFill = document.getElementById('confidenceFill');
+// =========================
+// 4️⃣ CARGAR IMAGEN LOCAL
+// =========================
+document.getElementById("image-upload").addEventListener("change", function (event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const img = document.getElementById("input-image");
+      img.src = e.target.result;
+      document.getElementById("result-label").innerText = "";
+      document.getElementById("result-confidence").innerText = "";
+    };
+    reader.readAsDataURL(file);
+  }
+});
 
-    // Para clasificación binaria: >0.5 = Maligno, <=0.5 = Benigno
-    const isMalignant = confidence > 0.5;
-    const displayConfidence = isMalignant ? confidence : 1 - confidence;
-    const prediction = isMalignant ? 'Maligno' : 'Benigno';
-    
-    // Actualizar texto del resultado y estilo
-    resultEl.className = `prediction-result result-${prediction.toLowerCase()}`;
-    resultEl.innerHTML = `
-        <div style="font-size: 1.5rem; margin-bottom: 10px;">
-            ${prediction === 'Maligno' ? '⚠️' : '✅'} ${prediction}
-        </div>
-        <div style="font-size: 1rem; opacity: 0.8;">
-            Confianza: ${(displayConfidence * 100).toFixed(1)}%
-        </div>
-    `;
+// =========================
+// 5️⃣ EVENTO BOTÓN
+// =========================
+document.getElementById("predict-button").addEventListener("click", predict);
 
-    // Actualizar barra de confianza
-    confidenceBar.classList.remove('hidden');
-    confidenceFill.style.width = `${displayConfidence * 100}%`;
-    confidenceFill.style.background = isMalignant ? 
-        'linear-gradient(45deg, #ff6b6b, #ee5a52)' : 
-        'linear-gradient(45deg, #a3d977, #68d391)';
-}
-
-// Inicializar la aplicación
-window.onload = function() {
-    loadModel();
-};
+// =========================
+// 6️⃣ INICIALIZACIÓN
+// =========================
+loadModel();
